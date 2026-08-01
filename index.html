@@ -694,7 +694,12 @@
       setTimeout(() => { badge.style.display = 'none'; }, 2000);
     }
 
-    // ─── Auth ────────────────────────────────────────────────────
+    // ─── AUTH FLOW — DO NOT MODIFY — PRODUCTION-FROZEN ───────────
+    // ⛔️ This auth block is tested and working on desktop + mobile.
+    // Desktop: signInWithPopup. Mobile: signInWithRedirect + sessionStorage guard.
+    // Any change WILL break the login flow. Do not refactor, simplify, or touch.
+    // Last verified: Aug 2026. Issues? Ask before changing.
+    // ──────────────────────────────────────────────────────────────
     async function signInWithGoogle() {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       try {
@@ -723,6 +728,7 @@
       render();
     }
 
+    // ⛔️ DO NOT MODIFY BELOW — see auth block header
     const returningFromRedirect = sessionStorage.getItem('_returning') === '1';
     sessionStorage.removeItem('_returning');
 
