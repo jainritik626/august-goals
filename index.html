@@ -609,7 +609,7 @@
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app"><div class="page"><div class="header"><div class="header-left"><div class="header-title">August 2026</div><div class="header-subtitle">Loading…</div></div></div><div style="text-align:center;padding:80px 20px;color:var(--text-secondary);"><div style="font-size:32px;margin-bottom:12px;opacity:0.5;">🔗</div><div style="font-size:15px;font-weight:500;">Loading your journal…</div></div></div></div>
 
   <div id="sync-badge" style="position:fixed;top:8px;right:16px;z-index:200;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;transition:all 0.3s;display:none;"></div>
 
@@ -724,12 +724,15 @@
       if (user) {
         currentUserId = user.uid;
         listenToFirestore();
+        signinSkipped = false;
         if (!state._initialLoadDone) state._initialLoadDone = true;
         render();
       } else {
         currentUserId = null;
         if (syncUnsubscribe) { syncUnsubscribe(); syncUnsubscribe = null; }
-        if (state._initialLoadDone || signinSkipped) render();
+        state._initialLoadDone = true;
+        state.entries = localFallback;
+        render();
       }
     });
 
@@ -1576,7 +1579,7 @@
     state.entries = loadLocalFallback();
     state.theme = loadTheme();
     applyTheme();
-    render();
+    // onAuthStateChanged will fire the first render
   </script>
 </body>
 </html>
