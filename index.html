@@ -695,7 +695,7 @@
     async function signInWithGoogle() {
       try {
         showSyncBadge('Signing in...', '#4285F4');
-        await auth.signInWithRedirect(googleProvider);
+        await auth.signInWithPopup(googleProvider);
       } catch (err) {
         console.warn('Google sign-in failed:', err.message);
         showSyncBadge('Sign-in skipped', '#FF9F0A');
@@ -710,9 +710,6 @@
       signinSkipped = false;
       render();
     }
-
-    // Must call getRedirectResult to process the credential from the redirect
-    auth.getRedirectResult().catch(() => {});
 
     auth.onAuthStateChanged(user => {
       if (user) {
@@ -730,7 +727,7 @@
       }
     });
 
-    // Fallback: if onAuthStateChanged never fires, show UI after 2s
+    // Fallback: if onAuthStateChanged never fires, show UI after 3s
     setTimeout(() => {
       if (!state._initialLoadDone) {
         state._initialLoadDone = true;
