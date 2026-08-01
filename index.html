@@ -674,9 +674,12 @@
       if (err.code === 'failed-precondition') console.warn('Firestore persistence failed (multiple tabs)');
     });
 
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
+
     let currentUserId = null;
     let syncUnsubscribe = null;
     let localFallback = [];
+    let signinSkipped = false;
 
     // ─── Sync badge ──────────────────────────────────────────────
     function showSyncBadge(text, bg) {
@@ -689,19 +692,54 @@
     }
 
     // ─── Auth ────────────────────────────────────────────────────
-    async function signInAnonymously() {
+    async function signInWithGoogle() {
       try {
-        showSyncBadge('Connecting...', '#8B5CF6');
-        const result = await auth.signInAnonymously();
-        currentUserId = result.user.uid;
-        showSyncBadge('Connected ✓', 'var(--color-success)');
-        return true;
+        showSyncBadge('Signing in...', '#4285F4');
+        await auth.signInWithRedirect(googleProvider);
       } catch (err) {
-        console.warn('Auth failed, using local fallback:', err.message);
-        showSyncBadge('Offline mode', '#FF9F0A');
-        return false;
+        console.warn('Google sign-in failed:', err.message);
+        showSyncBadge('Sign-in skipped', '#FF9F0A');
       }
     }
+
+    auth.getRedirectResult().then(result => {
+      if (result.user) {
+        showSyncBadge('Connected ✓', 'var(--color-success)');
+      }
+    }).catch(err => {
+      if (err.code !== 'auth/redirect-cancelled-by-user') {
+        console.warn('Redirect result error:', err.message);
+      }
+    });
+
+    function signOut() {
+      auth.signOut();
+      currentUserId = null;
+      if (syncUnsubscribe) syncUnsubscribe();
+      state.entries = localFallback;
+      render();
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUserId = user.uid;
+        listenToFirestore();
+        if (!state._initialLoadDone) state._initialLoadDone = true;
+        render();
+      } else {
+        currentUserId = null;
+        if (syncUnsubscribe) { syncUnsubscribe(); syncUnsubscribe = null; }
+        if (state._initialLoadDone || signinSkipped) render();
+      }
+    });
+
+    // After a short timeout, if auth hasn't resolved, show the UI anyway
+    setTimeout(() => {
+      if (currentUserId === null && state._initialLoadDone === false) {
+        state._initialLoadDone = true;
+        render();
+      }
+    }, 1500);
 
     function listenToFirestore() {
       if (!currentUserId) return;
@@ -981,6 +1019,67 @@
       const formattedToday = formatDisplayDate(today);
       const completedToday = GOALS.filter(g => isTodayCompleted(g.id)).length;
 
+      // Show sign-in prompt if not authenticated
+      if (!currentUserId && !signinSkipped) {
+        const goalCards = GOALS.map(g => {
+          const daysCompleted = getDaysCompleted(g.id);
+          const streak = getStreak(g.id);
+          const pct = (daysCompleted / 31) * 100;
+          const streakHTML = streak > 0
+            ? `<span class="streak-badge ${g.color}">🔥 ${streak}</span>`
+            : '';
+          return `
+            <div class="goal-card">
+              <div class="goal-card-top">
+                <div class="goal-card-name">
+                  <span class="goal-card-emoji">${g.emoji}</span>
+                  <span>${g.name}</span>
+                </div>
+                ${streakHTML}
+              </div>
+              <div class="progress-label">${daysCompleted} of 31 days</div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill ${g.color}" style="width: ${pct}%"></div>
+              </div>
+              <button class="goal-card-btn ${g.color + '-btn'}" data-action="sign-in-prompt">
+                Sign in to write →
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="page">
+            <div class="header">
+              <div class="header-left">
+                <div class="header-title">August 2026</div>
+                <div class="header-subtitle">${formattedToday}</div>
+              </div>
+              <button class="theme-toggle" data-action="toggle-theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+            </div>
+
+            <div class="quote-banner">
+              <div class="quote-text">"${quote.text}"</div>
+              <div class="quote-author">— ${quote.author}</div>
+            </div>
+
+            <div style="background:var(--card-bg);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;margin-bottom:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border);">
+              <div style="font-size:40px;margin-bottom:12px;">👋</div>
+              <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Sync across devices</div>
+              <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;">Sign in to save your entries and access them anywhere.</div>
+              <button style="width:100%;height:48px;border-radius:var(--radius);border:none;background:#4285F4;color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;" data-action="google-signin">
+                <span style="font-size:20px;">G</span> Sign in with Google
+              </button>
+              <button style="width:100%;height:48px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:10px;" data-action="skip-signin">
+                Continue without syncing
+              </button>
+            </div>
+
+            <div class="goal-cards" style="opacity:0.6;pointer-events:none;">${goalCards}</div>
+          </div>
+        `;
+      }
+
       const goalCards = GOALS.map(g => {
         const daysCompleted = getDaysCompleted(g.id);
         const streak = getStreak(g.id);
@@ -1018,7 +1117,10 @@
               <div class="header-title">August 2026</div>
               <div class="header-subtitle">${formattedToday}</div>
             </div>
-            <button class="theme-toggle" data-action="toggle-theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${currentUserId ? `<button data-action="sign-out" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:20px;border:none;background:var(--card-bg);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm);" title="Sign out">🔗 Synced</button>` : ''}
+              <button class="theme-toggle" data-action="toggle-theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+            </div>
           </div>
 
           <div class="quote-banner">
@@ -1372,6 +1474,24 @@
           render();
           break;
 
+        case 'google-signin':
+          await signInWithGoogle();
+          break;
+
+        case 'sign-in-prompt':
+          break;
+
+        case 'skip-signin':
+          signinSkipped = true;
+          state.entries = loadLocalFallback();
+          render();
+          break;
+
+        case 'sign-out':
+          signinSkipped = false;
+          signOut();
+          break;
+
         case 'open-journal':
           state.currentTab = 'journal';
           state.activeGoal = target.dataset.goal;
@@ -1440,14 +1560,6 @@
     state.theme = loadTheme();
     applyTheme();
     render();
-
-    (async function initFirebase() {
-      const ok = await signInAnonymously();
-      if (ok) {
-        listenToFirestore();
-      }
-      state._initialLoadDone = true;
-    })();
   </script>
 </body>
 </html>
