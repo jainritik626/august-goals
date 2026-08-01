@@ -733,13 +733,13 @@
       }
     });
 
-    // After a short timeout, if auth hasn't resolved, show the UI anyway
+    // After a short timeout, if auth hasn't resolved, show the sign-in prompt
     setTimeout(() => {
-      if (currentUserId === null && state._initialLoadDone === false) {
+      if (currentUserId === null && !state._initialLoadDone) {
         state._initialLoadDone = true;
         render();
       }
-    }, 1500);
+    }, 2000);
 
     function listenToFirestore() {
       if (!currentUserId) return;
@@ -1019,8 +1019,25 @@
       const formattedToday = formatDisplayDate(today);
       const completedToday = GOALS.filter(g => isTodayCompleted(g.id)).length;
 
-      // Show sign-in prompt if not authenticated
+      // Show sign-in prompt if not authenticated and not still loading
       if (!currentUserId && !signinSkipped) {
+        // After redirect, auth needs a moment to resolve — show brief loading
+        if (!state._initialLoadDone) {
+          return `
+            <div class="page">
+              <div class="header">
+                <div class="header-left">
+                  <div class="header-title">August 2026</div>
+                  <div class="header-subtitle">${formattedToday}</div>
+                </div>
+              </div>
+              <div style="text-align:center;padding:60px 20px;color:var(--text-secondary);">
+                <div style="font-size:32px;margin-bottom:12px;opacity:0.5;">🔗</div>
+                <div style="font-size:15px;font-weight:500;">Restoring your session…</div>
+              </div>
+            </div>
+          `;
+        }
         const goalCards = GOALS.map(g => {
           const daysCompleted = getDaysCompleted(g.id);
           const streak = getStreak(g.id);
