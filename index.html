@@ -611,6 +611,12 @@
 <body>
   <div id="app"></div>
 
+  <div id="sync-badge" style="position:fixed;top:8px;right:16px;z-index:200;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;transition:all 0.3s;display:none;"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
   <script>
     // ─── Constants ────────────────────────────────────────────────
     const GOALS = [
@@ -647,21 +653,141 @@
       theme: 'light',
       entries: [],
       isEditing: false,
+      _initialLoadDone: false,
     };
 
-    const STORAGE_KEY = 'august-goals-data';
     const THEME_KEY = 'august-goals-theme';
 
-    // ─── Storage ──────────────────────────────────────────────────
-    function loadEntries() {
+    // ─── Firebase Init ───────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzvA_KyvoJnyKAvk06wid2bHMJec-LxjU",
+      authDomain: "august-goals-journal.firebaseapp.com",
+      projectId: "august-goals-journal",
+      storageBucket: "august-goals-journal.firebasestorage.app",
+      appId: "1:630073656988:web:3058034299b32a838ecf59",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      if (err.code === 'failed-precondition') console.warn('Firestore persistence failed (multiple tabs)');
+    });
+
+    let currentUserId = null;
+    let syncUnsubscribe = null;
+    let localFallback = [];
+
+    // ─── Sync badge ──────────────────────────────────────────────
+    function showSyncBadge(text, bg) {
+      const badge = document.getElementById('sync-badge');
+      badge.textContent = text;
+      badge.style.display = 'block';
+      badge.style.background = bg || 'var(--color-remote)';
+      badge.style.color = '#fff';
+      setTimeout(() => { badge.style.display = 'none'; }, 2000);
+    }
+
+    // ─── Auth ────────────────────────────────────────────────────
+    async function signInAnonymously() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        showSyncBadge('Connecting...', '#8B5CF6');
+        const result = await auth.signInAnonymously();
+        currentUserId = result.user.uid;
+        showSyncBadge('Connected ✓', 'var(--color-success)');
+        return true;
+      } catch (err) {
+        console.warn('Auth failed, using local fallback:', err.message);
+        showSyncBadge('Offline mode', '#FF9F0A');
+        return false;
+      }
+    }
+
+    function listenToFirestore() {
+      if (!currentUserId) return;
+      if (syncUnsubscribe) syncUnsubscribe();
+
+      syncUnsubscribe = db.collection('entries')
+        .where('userId', '==', currentUserId)
+        .onSnapshot(snapshot => {
+          const remoteEntries = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            remoteEntries.push({
+              goalId: data.goalId,
+              date: data.date,
+              todaysTask: data.todaysTask,
+              tomorrowsTask: data.tomorrowsTask,
+              completedAt: data.completedAt,
+              _firestoreId: doc.id,
+            });
+          });
+          state.entries = remoteEntries;
+          saveToLocalFallback();
+          if (state._initialLoadDone) render();
+        }, err => {
+          console.warn('Firestore listen error, using local:', err.message);
+          state.entries = localFallback;
+        });
+    }
+
+    // ─── Storage (dual: Firestore + localStorage fallback) ───────
+    function saveToLocalFallback() {
+      localFallback = [...state.entries];
+      localStorage.setItem('august-goals-local', JSON.stringify(localFallback));
+    }
+
+    function loadLocalFallback() {
+      try {
+        const raw = localStorage.getItem('august-goals-local');
         return raw ? JSON.parse(raw) : [];
       } catch { return []; }
     }
 
-    function saveEntries() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+    async function saveEntryToFirestore(entry) {
+      if (!currentUserId) {
+        state.entries.push(entry);
+        saveToLocalFallback();
+        return;
+      }
+
+      // Uѕe composite id for upsert
+      const compositeId = `${entry.date}_${entry.goalId}`;
+      try {
+        await db.collection('entries').doc(compositeId).set({
+          userId: currentUserId,
+          goalId: entry.goalId,
+          date: entry.date,
+          todaysTask: entry.todaysTask,
+          tomorrowsTask: entry.tomorrowsTask,
+          completedAt: entry.completedAt,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (err) {
+        console.warn('Firestore save failed, using local:', err.message);
+        // Save locally anyway
+        const idx = state.entries.findIndex(e => e.date === entry.date && e.goalId === entry.goalId);
+        if (idx >= 0) state.entries[idx] = entry;
+        else state.entries.push(entry);
+        saveToLocalFallback();
+      }
+    }
+
+    async function deleteEntryFromFirestore(date, goalId) {
+      if (!currentUserId) {
+        state.entries = state.entries.filter(e => !(e.date === date && e.goalId === goalId));
+        saveToLocalFallback();
+        return;
+      }
+
+      const compositeId = `${date}_${goalId}`;
+      try {
+        await db.collection('entries').doc(compositeId).delete();
+      } catch (err) {
+        console.warn('Firestore delete failed:', err.message);
+        state.entries = state.entries.filter(e => !(e.date === date && e.goalId === goalId));
+        saveToLocalFallback();
+      }
     }
 
     function loadTheme() {
@@ -980,13 +1106,12 @@
       `;
     }
 
-    function handleSaveEntry(formEl) {
+    async function handleSaveEntry(formEl) {
       const todaysTask = formEl.querySelector('#todays-task').value.trim();
       const tomorrowsTask = formEl.querySelector('#tomorrows-task').value.trim();
       if (!todaysTask && !tomorrowsTask) return;
 
       const today = getToday();
-      const idx = state.entries.findIndex(e => e.date === today && e.goalId === state.activeGoal);
       const entry = {
         goalId: state.activeGoal,
         date: today,
@@ -995,13 +1120,8 @@
         completedAt: new Date().toISOString(),
       };
 
-      if (idx >= 0) {
-        state.entries[idx] = entry;
-      } else {
-        state.entries.push(entry);
-      }
       state.isEditing = false;
-      saveEntries();
+      await saveEntryToFirestore(entry);
 
       showCelebration(() => {
         state.currentTab = 'dashboard';
@@ -1237,7 +1357,7 @@
     }
 
     // ─── Event Delegation ────────────────────────────────────────
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
       const target = e.target.closest('[data-action]');
       if (!target) return;
 
@@ -1274,10 +1394,7 @@
         case 'delete-entry':
           if (confirm('Delete this entry?')) {
             const today = getToday();
-            state.entries = state.entries.filter(
-              e => !(e.date === today && e.goalId === state.activeGoal)
-            );
-            saveEntries();
+            await deleteEntryFromFirestore(today, state.activeGoal);
             state.currentTab = 'dashboard';
             render();
           }
@@ -1319,10 +1436,18 @@
     });
 
     // ─── Init ────────────────────────────────────────────────────
-    state.entries = loadEntries();
+    state.entries = loadLocalFallback();
     state.theme = loadTheme();
     applyTheme();
     render();
+
+    (async function initFirebase() {
+      const ok = await signInAnonymously();
+      if (ok) {
+        listenToFirestore();
+      }
+      state._initialLoadDone = true;
+    })();
   </script>
 </body>
 </html>
