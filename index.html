@@ -698,40 +698,21 @@
     async function signInWithGoogle() {
       try {
         showSyncBadge('Signing in...', '#4285F4');
-        await auth.signInWithRedirect(googleProvider);
+        await auth.signInWithPopup(googleProvider);
       } catch (err) {
-        console.warn('Google sign-in failed:', err.message);
-        showSyncBadge('Sign-in skipped', '#FF9F0A');
-      }
-    }
-
-    function resolveAuth() {
-      const user = auth.currentUser;
-      if (user) {
-        currentUserId = user.uid;
-        userName = user.displayName || localStorage.getItem('august-goals-name') || '';
-        signinSkipped = false;
-        state._initialLoadDone = true;
-        showSyncBadge('Connected ✓', 'var(--color-success)');
-        listenToFirestore();
-      } else {
-        userName = localStorage.getItem('august-goals-name') || '';
-        currentUserId = null;
-        state._initialLoadDone = true;
-        state.entries = localFallback;
-      }
-      render();
-    }
-
-    // getRedirectResult must be called to complete the redirect sign-in
-    auth.getRedirectResult()
-      .then(result => {
-        if (result && result.user) {
-          // Redirect just completed — auth.currentUser is now set
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+          try {
+            await auth.signInWithRedirect(googleProvider);
+          } catch (err2) {
+            console.warn('Google sign-in failed:', err2.message);
+            showSyncBadge('Sign-in skipped', '#FF9F0A');
+          }
+        } else {
+          console.warn('Google sign-in failed:', err.message);
+          showSyncBadge('Sign-in skipped', '#FF9F0A');
         }
-        resolveAuth();
-      })
-      .catch(() => resolveAuth());
+      }
+    }
 
     function signOut() {
       auth.signOut();
@@ -742,9 +723,33 @@
       render();
     }
 
-    // Fallback: if getRedirectResult hangs, resolve after 3s
+    auth.getRedirectResult().catch(() => {});
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUserId = user.uid;
+        userName = user.displayName || localStorage.getItem('august-goals-name') || '';
+        signinSkipped = false;
+        if (!state._initialLoadDone) state._initialLoadDone = true;
+        showSyncBadge('Connected ✓', 'var(--color-success)');
+        listenToFirestore();
+        render();
+      } else if (!state._initialLoadDone) {
+        userName = localStorage.getItem('august-goals-name') || '';
+        currentUserId = null;
+        state._initialLoadDone = true;
+        state.entries = localFallback;
+        render();
+      }
+    });
+
+    // Fallback: if auth never resolves, show UI after 3s
     setTimeout(() => {
-      if (!state._initialLoadDone) resolveAuth();
+      if (!state._initialLoadDone) {
+        state._initialLoadDone = true;
+        state.entries = localFallback;
+        render();
+      }
     }, 3000);
 
     function listenToFirestore() {
