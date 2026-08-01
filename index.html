@@ -702,65 +702,42 @@
       }
     }
 
-    auth.getRedirectResult().then(result => {
-      authPending = false;
-      if (result.user && !currentUserId) {
-        currentUserId = result.user.uid;
-        listenToFirestore();
-        state._initialLoadDone = true;
-        showSyncBadge('Connected ✓', 'var(--color-success)');
-        render();
-      } else if (!state._initialLoadDone) {
-        state._initialLoadDone = true;
-        render();
-      }
-    }).catch(err => {
-      authPending = false;
-      if (err.code !== 'auth/redirect-cancelled-by-user') {
-        console.warn('Redirect result error:', err.message);
-      }
-      if (!state._initialLoadDone) {
-        state._initialLoadDone = true;
-        render();
-      }
-    });
-
     function signOut() {
       auth.signOut();
       currentUserId = null;
       if (syncUnsubscribe) syncUnsubscribe();
       state.entries = localFallback;
+      signinSkipped = false;
       render();
     }
 
-    let authPending = true;
+    // Must call getRedirectResult to process the credential from the redirect
+    auth.getRedirectResult().catch(() => {});
 
     auth.onAuthStateChanged(user => {
       if (user) {
         currentUserId = user.uid;
-        authPending = false;
-        listenToFirestore();
         signinSkipped = false;
-        if (!state._initialLoadDone) state._initialLoadDone = true;
+        state._initialLoadDone = true;
+        showSyncBadge('Connected ✓', 'var(--color-success)');
+        listenToFirestore();
         render();
-      } else if (authPending) {
-        // Only handle the initial null — don't re-render to null if user was
-        // already set by getRedirectResult
-        authPending = false;
-        if (syncUnsubscribe) { syncUnsubscribe(); syncUnsubscribe = null; }
+      } else if (!state._initialLoadDone) {
+        currentUserId = null;
         state._initialLoadDone = true;
         state.entries = localFallback;
         render();
       }
     });
 
-    // After a short timeout, if auth hasn't resolved, show the sign-in prompt
+    // Fallback: if onAuthStateChanged never fires, show UI after 2s
     setTimeout(() => {
-      if (currentUserId === null && !state._initialLoadDone) {
+      if (!state._initialLoadDone) {
         state._initialLoadDone = true;
+        state.entries = localFallback;
         render();
       }
-    }, 2000);
+    }, 3000);
 
     function listenToFirestore() {
       if (!currentUserId) return;
