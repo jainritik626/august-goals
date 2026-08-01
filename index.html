@@ -703,12 +703,20 @@
     }
 
     auth.getRedirectResult().then(result => {
-      if (result.user) {
+      if (result.user && !currentUserId) {
+        currentUserId = result.user.uid;
+        listenToFirestore();
+        state._initialLoadDone = true;
         showSyncBadge('Connected ✓', 'var(--color-success)');
+        render();
       }
     }).catch(err => {
       if (err.code !== 'auth/redirect-cancelled-by-user') {
         console.warn('Redirect result error:', err.message);
+      }
+      if (!state._initialLoadDone) {
+        state._initialLoadDone = true;
+        render();
       }
     });
 
