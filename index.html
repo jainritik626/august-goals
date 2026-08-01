@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#F5F5F7">
+  <meta name="apple-mobile-web-app-title" content="Aug Goals">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%233B82F6'/%3E%3Ctext x='90' y='120' font-size='90' text-anchor='middle' font-family='system-ui'%3E📋%3C/text%3E%3C/svg%3E">
+  <title>August 2026 Goals</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F5F7;
+      --card-bg: #FFFFFF;
+      --card-bg-elevated: #FFFFFF;
+      --text: #1D1D1F;
+      --text-secondary: #86868B;
+      --text-tertiary: #AEAEB2;
+      --border: rgba(0,0,0,0.06);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+      --color-remote: #3B82F6;
+      --color-remote-bg: rgba(59,130,246,0.08);
+      --color-staffbook: #8B5CF6;
+      --color-staffbook-bg: rgba(139,92,246,0.08);
+      --color-shaadi: #F43F5E;
+      --color-shaadi-bg: rgba(244,63,94,0.08);
+      --color-success: #34C759;
+      --color-success-bg: rgba(52,199,89,0.12);
+      --color-warning: #FF9F0A;
+      --color-warning-bg: rgba(255,159,10,0.12);
+      --color-missed: #D1D1D6;
+      --overlay-bg: rgba(0,0,0,0.3);
+      --radius-sm: 12px;
+      --radius: 16px;
+      --radius-lg: 20px;
+      --radius-xl: 24px;
+      --tab-height: 56px;
+    }
+
+    .dark {
+      --bg: #000000;
+      --card-bg: #1C1C1E;
+      --card-bg-elevated: #2C2C2E;
+      --text: #F5F5F7;
+      --text-secondary: #98989D;
+      --text-tertiary: #636366;
+      --border: rgba(255,255,255,0.08);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+      --color-remote-bg: rgba(59,130,246,0.12);
+      --color-staffbook-bg: rgba(139,92,246,0.12);
+      --color-shaadi-bg: rgba(244,63,94,0.12);
+      --color-success-bg: rgba(52,199,89,0.16);
+      --color-warning-bg: rgba(255,159,10,0.16);
+      --color-missed: #48484A;
+      --overlay-bg: rgba(0,0,0,0.5);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body { overflow-y: auto; }
+
+    #app {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      padding: 0 16px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: calc(var(--tab-height) + max(20px, env(safe-area-inset-bottom)) + 16px);
+    }
+
+    /* Page transition */
+    .page { animation: pageIn 0.25s ease-out; }
+    @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0 16px;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+    .header-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .header-subtitle { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
+
+    .theme-toggle {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--card-bg);
+      box-shadow: var(--shadow-sm);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, background 0.3s;
+    }
+    .theme-toggle:active { transform: scale(0.92); }
+
+    /* Quote banner */
+    .quote-banner {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+    }
+    .quote-text { font-size: 16px; font-weight: 500; line-height: 1.5; font-style: italic; }
+    .quote-author { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+
+    /* Goal Card */
+    .goal-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .goal-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .goal-card:active { transform: scale(0.985); box-shadow: var(--shadow); }
+    .goal-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .goal-card-name { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; }
+    .goal-card-emoji { font-size: 28px; line-height: 1; }
+
+    .streak-badge {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .streak-badge.remote { background: var(--color-remote-bg); color: var(--color-remote); }
+    .streak-badge.staffbook { background: var(--color-staffbook-bg); color: var(--color-staffbook); }
+    .streak-badge.shaadi { background: var(--color-shaadi-bg); color: var(--color-shaadi); }
+
+    .progress-bar-wrap {
+      height: 6px;
+      background: rgba(0,0,0,0.06);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .dark .progress-bar-wrap { background: rgba(255,255,255,0.08); }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .progress-bar-fill.remote { background: var(--color-remote); }
+    .progress-bar-fill.staffbook { background: var(--color-staffbook); }
+    .progress-bar-fill.shaadi { background: var(--color-shaadi); }
+
+    .progress-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+
+    .goal-card-btn {
+      width: 100%;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+    .goal-card-btn:active { transform: scale(0.97); }
+    .goal-card-btn.completed {
+      background: var(--color-success-bg);
+      color: var(--color-success);
+    }
+    .goal-card-btn.remote-btn { background: var(--color-remote); color: #fff; }
+    .goal-card-btn.staffbook-btn { background: var(--color-staffbook); color: #fff; }
+    .goal-card-btn.shaadi-btn { background: var(--color-shaadi); color: #fff; }
+
+    /* Today Summary */
+    .today-summary {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .today-summary strong { color: var(--text); }
+
+    /* Journal */
+    .journal-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 8px 0; }
+    .back-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--card-bg);
+      box-shadow: var(--shadow-sm);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .back-btn:active { transform: scale(0.92); }
+    .journal-title { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .journal-completed {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .journal-completed-icon { font-size: 48px; margin-bottom: 12px; }
+    .journal-completed-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .journal-completed-date { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
+    .journal-completed-entries { text-align: left; }
+    .journal-completed-entry { margin-bottom: 14px; }
+    .journal-completed-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .journal-completed-text { font-size: 15px; line-height: 1.5; padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm); }
+
+    .journal-edit-btn {
+      margin-top: 16px;
+      height: 40px;
+      padding: 0 20px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Form */
+    .journal-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding-left: 4px;
+    }
+    .form-textarea {
+      width: 100%;
+      min-height: 88px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+    .form-textarea:focus { border-color: var(--color-remote); box-shadow: 0 0 0 3px var(--color-remote-bg); }
+    .form-textarea::placeholder { color: var(--text-tertiary); }
+
+    .form-hint { font-size: 12px; color: var(--text-secondary); padding-left: 4px; font-style: italic; }
+
+    .save-btn {
+      width: 100%;
+      height: 52px;
+      border-radius: var(--radius);
+      border: none;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      font-family: inherit;
+      letter-spacing: -0.2px;
+    }
+    .save-btn:active { transform: scale(0.97); }
+    .save-btn.remote { background: var(--color-remote); }
+    .save-btn.staffbook { background: var(--color-staffbook); }
+    .save-btn.shaadi { background: var(--color-shaadi); }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .delete-btn {
+      width: 100%;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--color-shaadi);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+
+    /* Celebration */
+    .celebration-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .celebration-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-xl);
+      padding: 32px 40px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      animation: celebIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: auto;
+    }
+    @keyframes celebIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    .celebration-emoji { font-size: 56px; margin-bottom: 12px; animation: celebBounce 0.6s ease-out; }
+    @keyframes celebBounce { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    .celebration-text { font-size: 20px; font-weight: 700; }
+
+    .celeb-particle {
+      position: fixed;
+      font-size: 24px;
+      pointer-events: none;
+      z-index: 999;
+      animation: particleUp 1.2s ease-out forwards;
+    }
+    @keyframes particleUp {
+      0% { opacity: 1; transform: translateY(0) scale(0.5) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(-200px) scale(1.2) rotate(180deg); }
+    }
+
+    /* Calendar */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+    .cal-day-header {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 8px 0 4px;
+    }
+    .cal-spacer { visibility: hidden; }
+
+    .cal-cell {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s;
+      min-width: 0;
+    }
+    .cal-cell:active { background: var(--border); }
+    .cal-cell.selected { background: var(--color-remote-bg); }
+
+    .cal-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-top: 3px;
+    }
+    .cal-dot.green { background: var(--color-success); }
+    .cal-dot.orange { background: var(--color-warning); }
+    .cal-dot.gray { background: var(--color-missed); }
+    .cal-cell.upcoming { color: var(--text-tertiary); pointer-events: none; }
+    .cal-cell.future-dot { pointer-events: auto; }
+
+    /* Day detail modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      animation: backdropIn 0.2s ease-out;
+    }
+    @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-sheet {
+      background: var(--card-bg-elevated);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      width: 100%;
+      max-width: 430px;
+      max-height: 70dvh;
+      overflow-y: auto;
+      padding: 8px 0 calc(16px + env(safe-area-inset-bottom));
+      box-shadow: var(--shadow-lg);
+      animation: sheetUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .modal-handle {
+      width: 36px; height: 5px;
+      background: var(--text-tertiary);
+      border-radius: 3px;
+      margin: 0 auto 16px;
+    }
+    .modal-header {
+      padding: 0 20px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--border);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .modal-entries { padding: 16px 20px; }
+    .modal-entry {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-entry:last-child { border-bottom: none; }
+    .modal-entry-goal {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .modal-entry-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; padding-left: 8px; }
+    .modal-entry-empty { font-size: 14px; color: var(--text-tertiary); font-style: italic; padding-left: 8px; }
+
+    /* Review */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+    .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
+
+    .entries-list { display: flex; flex-direction: column; gap: 12px; }
+    .entry-group {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .entry-group-header {
+      padding: 14px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .entry-group-body { padding: 0 16px 14px; display: none; }
+    .entry-group.open .entry-group-body { display: block; }
+    .entry-item { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .entry-item:last-child { border-bottom: none; }
+    .entry-item-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .entry-item-text { font-size: 14px; color: var(--text-secondary); padding-left: 4px; }
+
+    .completion-dots { display: flex; gap: 4px; }
+    .completion-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .completion-dot.filled.remote { background: var(--color-remote); }
+    .completion-dot.filled.staffbook { background: var(--color-staffbook); }
+    .completion-dot.filled.shaadi { background: var(--color-shaadi); }
+    .completion-dot.empty { background: var(--color-missed); }
+
+    .insight-banner {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-top: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-tertiary);
+      font-size: 15px;
+    }
+    .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* TabBar */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(var(--tab-height) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 50;
+      max-width: 430px;
+      margin: 0 auto;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 12px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      min-width: 48px;
+      min-height: 44px;
+      transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-item.active { color: var(--color-remote); font-weight: 600; }
+    .tab-icon { font-size: 22px; line-height: 1; }
+
+    /* Scrollbar hide */
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // ─── Constants ────────────────────────────────────────────────
+    const GOALS = [
+      { id: 'remote-job', name: 'Remote Job', emoji: '💼', color: 'remote' },
+      { id: 'staffbook', name: 'StaffBook', emoji: '🚀', color: 'staffbook' },
+      { id: 'shaadi', name: 'Shaadi', emoji: '💍', color: 'shaadi' },
+    ];
+
+    const QUOTES = [
+      { text: "Small daily improvements are the key to staggering long-term results.", author: 'Robin Sharma' },
+      { text: "You do not rise to the level of your goals. You fall to the level of your systems.", author: 'James Clear' },
+      { text: "The secret of getting ahead is getting started.", author: 'Mark Twain' },
+      { text: "Discipline is choosing between what you want now and what you want most.", author: 'Abraham Lincoln' },
+      { text: "Success is the sum of small efforts, repeated day in and day out.", author: 'Robert Collier' },
+      { text: "It does not matter how slowly you go as long as you do not stop.", author: 'Confucius' },
+      { text: "The only way to do great work is to love what you do.", author: 'Steve Jobs' },
+      { text: "Your future is created by what you do today, not tomorrow.", author: 'Robert Kiyosaki' },
+      { text: "Consistency is more important than perfection.", author: 'Unknown' },
+      { text: "What gets measured gets managed.", author: 'Peter Drucker' },
+    ];
+
+    const CELEB_EMOJIS = ['🎉', '✨', '🔥', '⭐', '💪', '🏆', '🌟', '🎯'];
+
+    // Aug 1, 2026 is a Saturday (day 6 in JS: 0=Sun, 6=Sat)
+    const AUG_START_DAY = 6; // Saturday
+    const YEAR = 2026;
+    const MONTH = 7; // 0-indexed, 7=August
+
+    // ─── State ────────────────────────────────────────────────────
+    let state = {
+      currentTab: 'dashboard',
+      activeGoal: 'remote-job',
+      selectedDate: null,
+      theme: 'light',
+      entries: [],
+      isEditing: false,
+    };
+
+    const STORAGE_KEY = 'august-goals-data';
+    const THEME_KEY = 'august-goals-theme';
+
+    // ─── Storage ──────────────────────────────────────────────────
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function saveEntries() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+    }
+
+    function loadTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'dark' || saved === 'light') return saved;
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+      return 'light';
+    }
+
+    function applyTheme() {
+      document.documentElement.classList.toggle('dark', state.theme === 'dark');
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = state.theme === 'dark' ? '#000000' : '#F5F5F7';
+      localStorage.setItem(THEME_KEY, state.theme);
+    }
+
+    // ─── Date utilities ──────────────────────────────────────────
+    function getEffectiveDate() {
+      const now = new Date();
+      const todayStr = formatDateStr(now.getFullYear(), now.getMonth(), now.getDate());
+      if (todayStr < '2026-08-01') return '2026-08-01';
+      if (todayStr > '2026-08-31') return '2026-08-31';
+      return todayStr;
+    }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function formatDateStr(y, m, d) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
+
+    function formatDisplayDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+    }
+
+    function getToday() { return getEffectiveDate(); }
+
+    function getDaysInAugust() {
+      const days = [];
+      for (let d = 1; d <= 31; d++) days.push(formatDateStr(2026, 7, d));
+      return days;
+    }
+
+    // ─── Entry helpers ───────────────────────────────────────────
+    function getEntry(date, goalId) {
+      return state.entries.find(e => e.date === date && e.goalId === goalId);
+    }
+
+    function getEntriesForDate(date) {
+      return state.entries.filter(e => e.date === date);
+    }
+
+    function getEntriesForGoal(goalId) {
+      return state.entries.filter(e => e.goalId === goalId);
+    }
+
+    function isTodayCompleted(goalId) {
+      return !!getEntry(getToday(), goalId);
+    }
+
+    function getCompletedDates(goalId) {
+      return new Set(getEntriesForGoal(goalId).map(e => e.date));
+    }
+
+    function getDaysCompleted(goalId) {
+      return getCompletedDates(goalId).size;
+    }
+
+    // ─── Streak ──────────────────────────────────────────────────
+    function getStreak(goalId) {
+      const completed = getCompletedDates(goalId);
+      let streak = 0;
+      const today = getToday();
+      let check = new Date(today + 'T00:00:00');
+
+      // Start from today, go backwards
+      while (true) {
+        const dateStr = formatDateStr(check.getFullYear(), check.getMonth(), check.getDate());
+        if (dateStr < '2026-08-01') break;
+        if (completed.has(dateStr)) {
+          streak++;
+          check.setDate(check.getDate() - 1);
+        } else {
+          // If today is not completed, check if yesterday starts a streak
+          if (streak === 0 && dateStr === today) {
+            check.setDate(check.getDate() - 1);
+            continue;
+          }
+          break;
+        }
+      }
+      return streak;
+    }
+
+    // ─── Stats ───────────────────────────────────────────────────
+    function getStats() {
+      const uniqueDays = new Set(state.entries.map(e => e.date));
+      const totalDays = uniqueDays.size;
+
+      let longestStreak = 0;
+      GOALS.forEach(g => { longestStreak = Math.max(longestStreak, getStreak(g.id)); });
+
+      const totalPossible = 3 * 31; // 93 possible goal-days
+      const completionRate = Math.round((state.entries.length / totalPossible) * 100);
+
+      return { totalDays, longestStreak, completionRate, totalEntries: state.entries.length };
+    }
+
+    function getCurrentBestStreak() {
+      return Math.max(...GOALS.map(g => getStreak(g.id)));
+    }
+
+    // ─── Quote ───────────────────────────────────────────────────
+    function getDailyQuote() {
+      const dayOfYear = Math.floor((Date.now() - new Date(2026, 0, 1)) / 86400000);
+      return QUOTES[dayOfYear % QUOTES.length];
+    }
+
+    function getFirstIncompleteGoal() {
+      for (const g of GOALS) {
+        if (!isTodayCompleted(g.id)) return g.id;
+      }
+      return 'remote-job';
+    }
+
+    // ─── Celebration ─────────────────────────────────────────────
+    function showCelebration(callback) {
+      // Particles
+      const colors = ['#3B82F6', '#8B5CF6', '#F43F5E', '#34C759', '#FF9F0A'];
+      for (let i = 0; i < 12; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'celeb-particle';
+        particle.textContent = CELEB_EMOJIS[i % CELEB_EMOJIS.length];
+        particle.style.left = `${20 + Math.random() * 60}%`;
+        particle.style.top = `${40 + Math.random() * 30}%`;
+        particle.style.animationDuration = `${0.8 + Math.random() * 0.8}s`;
+        particle.style.animationDelay = `${Math.random() * 0.2}s`;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 1800);
+      }
+
+      // Card
+      const overlay = document.createElement('div');
+      overlay.className = 'celebration-overlay';
+      overlay.innerHTML = `
+        <div class="celebration-card" id="celebration-card">
+          <div class="celebration-emoji">🎉</div>
+          <div class="celebration-text">Great work!</div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      setTimeout(() => {
+        overlay.remove();
+        if (callback) callback();
+      }, 1500);
+
+      // Tap to dismiss early
+      overlay.addEventListener('click', () => {
+        overlay.remove();
+        if (callback) callback();
+      });
+    }
+
+    // ─── Render: TabBar ──────────────────────────────────────────
+    function renderTabBar() {
+      const active = state.currentTab;
+      const incomplete = getFirstIncompleteGoal();
+      const tabs = [
+        { id: 'dashboard', icon: '🏠', label: 'Home' },
+        { id: 'journal', icon: '✏️', label: 'Write' },
+        { id: 'history', icon: '📅', label: 'History' },
+        { id: 'review', icon: '📊', label: 'Review' },
+      ];
+      return `
+        <nav class="tab-bar">
+          ${tabs.map(t => `
+            <button class="tab-item ${active === t.id ? 'active' : ''}" data-tab="${t.id}" data-goal="${incomplete}">
+              <span class="tab-icon">${t.icon}</span>
+              <span>${t.label}</span>
+            </button>
+          `).join('')}
+        </nav>
+      `;
+    }
+
+    // ─── Render: Dashboard ───────────────────────────────────────
+    function renderDashboard() {
+      const quote = getDailyQuote();
+      const today = getToday();
+      const formattedToday = formatDisplayDate(today);
+      const completedToday = GOALS.filter(g => isTodayCompleted(g.id)).length;
+
+      const goalCards = GOALS.map(g => {
+        const daysCompleted = getDaysCompleted(g.id);
+        const streak = getStreak(g.id);
+        const completed = isTodayCompleted(g.id);
+        const pct = (daysCompleted / 31) * 100;
+
+        const streakHTML = streak > 0
+          ? `<span class="streak-badge ${g.color}">🔥 ${streak}</span>`
+          : '';
+
+        return `
+          <div class="goal-card" data-action="open-journal" data-goal="${g.id}">
+            <div class="goal-card-top">
+              <div class="goal-card-name">
+                <span class="goal-card-emoji">${g.emoji}</span>
+                <span>${g.name}</span>
+              </div>
+              ${streakHTML}
+            </div>
+            <div class="progress-label">${daysCompleted} of 31 days</div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill ${g.color}" style="width: ${pct}%"></div>
+            </div>
+            <button class="goal-card-btn ${completed ? 'completed' : g.color + '-btn'}" data-action="${completed ? 'none' : 'open-journal'}" data-goal="${g.id}">
+              ${completed ? '✓ Completed' : 'Write today\'s entry →'}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="page">
+          <div class="header">
+            <div class="header-left">
+              <div class="header-title">August 2026</div>
+              <div class="header-subtitle">${formattedToday}</div>
+            </div>
+            <button class="theme-toggle" data-action="toggle-theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+          </div>
+
+          <div class="quote-banner">
+            <div class="quote-text">"${quote.text}"</div>
+            <div class="quote-author">— ${quote.author}</div>
+          </div>
+
+          <div class="goal-cards">${goalCards}</div>
+
+          <div class="today-summary">
+            ${completedToday === 3
+              ? '<strong>All done! 🎉</strong> 3 of 3 goals completed today.'
+              : completedToday === 0
+                ? '<strong>Let\'s go!</strong> 0 of 3 goals completed today. Choose one to start.'
+                : `<strong>Keep going!</strong> ${completedToday} of 3 goals completed today.`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    // ─── Render: Journal ─────────────────────────────────────────
+    function renderJournal() {
+      const goal = GOALS.find(g => g.id === state.activeGoal);
+      if (!goal) { state.currentTab = 'dashboard'; state.activeGoal = 'remote-job'; render(); return ''; }
+
+      const today = getToday();
+      const entry = getEntry(today, goal.id);
+      const completed = !!entry;
+
+      if (completed && !state.isEditing) {
+        return `
+          <div class="page">
+            ${renderJournalTop(goal)}
+            <div class="journal-completed">
+              <div class="journal-completed-icon">✅</div>
+              <div class="journal-completed-title">Done for today!</div>
+              <div class="journal-completed-date">${formatDisplayDate(today)}</div>
+              <div class="journal-completed-entries">
+                <div class="journal-completed-entry">
+                  <div class="journal-completed-label">Today's accomplishment</div>
+                  <div class="journal-completed-text">${entry.todaysTask || '—'}</div>
+                </div>
+                <div class="journal-completed-entry">
+                  <div class="journal-completed-label">Most important for tomorrow</div>
+                  <div class="journal-completed-text">${entry.tomorrowsTask || '—'}</div>
+                </div>
+              </div>
+              <button class="journal-edit-btn" data-action="edit-entry">Edit entry</button>
+              <button class="delete-btn" data-action="delete-entry">Delete entry</button>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="page">
+          ${renderJournalTop(goal)}
+          <form class="journal-form" id="journal-form">
+            <div class="form-group">
+              <label class="form-label">What did you accomplish today?</label>
+              <textarea class="form-textarea" id="todays-task" placeholder="One thing you're proud of..." maxlength="300">${entry ? entry.todaysTask : ''}</textarea>
+              <span class="form-hint">Keep it short and focused</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">What's most important for tomorrow?</label>
+              <textarea class="form-textarea" id="tomorrows-task" placeholder="Your #1 priority..." maxlength="300">${entry ? entry.tomorrowsTask : ''}</textarea>
+              <span class="form-hint">One clear intention</span>
+            </div>
+            <button type="submit" class="save-btn ${goal.color}" id="save-btn">${entry ? 'Update Entry' : 'Save Entry'}</button>
+          </form>
+        </div>
+      `;
+    }
+
+    function renderJournalTop(goal) {
+      return `
+        <div class="journal-top">
+          <button class="back-btn" data-action="go-back">←</button>
+          <div class="journal-title">
+            <span>${goal.emoji}</span>
+            <span>${goal.name}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleSaveEntry(formEl) {
+      const todaysTask = formEl.querySelector('#todays-task').value.trim();
+      const tomorrowsTask = formEl.querySelector('#tomorrows-task').value.trim();
+      if (!todaysTask && !tomorrowsTask) return;
+
+      const today = getToday();
+      const idx = state.entries.findIndex(e => e.date === today && e.goalId === state.activeGoal);
+      const entry = {
+        goalId: state.activeGoal,
+        date: today,
+        todaysTask,
+        tomorrowsTask,
+        completedAt: new Date().toISOString(),
+      };
+
+      if (idx >= 0) {
+        state.entries[idx] = entry;
+      } else {
+        state.entries.push(entry);
+      }
+      state.isEditing = false;
+      saveEntries();
+
+      showCelebration(() => {
+        state.currentTab = 'dashboard';
+        render();
+      });
+    }
+
+    // ─── Render: History ─────────────────────────────────────────
+    function renderHistory() {
+      return `
+        <div class="page">
+          <div class="header">
+            <div class="header-left">
+              <div class="header-title">August 2026</div>
+              <div class="header-subtitle">Your journey</div>
+            </div>
+            <button class="theme-toggle" data-action="toggle-theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+          </div>
+          ${renderCalendarGrid()}
+          ${state.selectedDate ? renderDayDetailModal(state.selectedDate) : ''}
+        </div>
+      `;
+    }
+
+    function renderCalendarGrid() {
+      const days = getDaysInAugust();
+      const today = getToday();
+      const headers = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      const headerHTML = headers.map(h => `<div class="cal-day-header">${h}</div>`).join('');
+
+      // 6 spacers for Aug 1 being Saturday (offset from Sunday)
+      const spacers = Array(AUG_START_DAY).fill(null).map(() => '<div class="cal-spacer"></div>').join('');
+
+      const cells = days.map(dateStr => {
+        const entries = getEntriesForDate(dateStr);
+        const count = entries.length;
+        const isSelected = state.selectedDate === dateStr;
+        const isFuture = dateStr > today;
+        const dayNum = parseInt(dateStr.split('-')[2], 10);
+
+        let dotClass = '';
+        if (count === 3) dotClass = 'green';
+        else if (count >= 1) dotClass = 'orange';
+        else if (!isFuture) dotClass = 'gray';
+
+        if (isFuture) {
+          return `<div class="cal-cell upcoming">${dayNum}</div>`;
+        }
+
+        return `
+          <div class="cal-cell ${isSelected ? 'selected' : ''}" data-action="select-date" data-date="${dateStr}">
+            ${dayNum}
+            ${dotClass ? `<div class="cal-dot ${dotClass}"></div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="calendar-grid">
+          ${headerHTML}
+          ${spacers}
+          ${cells}
+        </div>
+        <div style="display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--text-secondary);padding:8px 0">
+          <span>🟢 All done</span>
+          <span>🟠 Partial</span>
+          <span>⚪ Missed</span>
+        </div>
+      `;
+    }
+
+    function renderDayDetailModal(dateStr) {
+      if (!dateStr) return '';
+      const entries = getEntriesForDate(dateStr);
+      const displayDate = formatDisplayDate(dateStr);
+
+      const entryList = GOALS.map(g => {
+        const entry = entries.find(e => e.goalId === g.id);
+        if (!entry) {
+          return `
+            <div class="modal-entry">
+              <div class="modal-entry-goal">${g.emoji} ${g.name}</div>
+              <div class="modal-entry-empty">No entry</div>
+            </div>
+          `;
+        }
+        return `
+          <div class="modal-entry">
+            <div class="modal-entry-goal">${g.emoji} ${g.name}</div>
+            <div class="modal-entry-text"><strong>Today:</strong> ${entry.todaysTask || '—'}</div>
+            <div class="modal-entry-text"><strong>Tomorrow:</strong> ${entry.tomorrowsTask || '—'}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="modal-backdrop" data-action="close-modal">
+          <div class="modal-sheet" data-action="no-close">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+              <span>${displayDate}</span>
+              <button class="modal-close" data-action="close-modal">✕</button>
+            </div>
+            <div class="modal-entries">${entryList}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ─── Render: Review ──────────────────────────────────────────
+    function renderReview() {
+      const stats = getStats();
+      const bestStreak = getCurrentBestStreak();
+      const allDays = getDaysInAugust();
+
+      // Group entries by date (newest first)
+      const grouped = {};
+      state.entries.forEach(e => {
+        if (!grouped[e.date]) grouped[e.date] = [];
+        grouped[e.date].push(e);
+      });
+
+      const sortedDates = Object.keys(grouped).sort().reverse();
+
+      let insightText = stats.completionRate >= 80
+        ? 'Excellent consistency! You\'re building powerful habits. Keep it up.'
+        : stats.completionRate >= 50
+          ? 'Good progress. You\'re on track — can you close the gap even further?'
+          : stats.completionRate > 0
+            ? 'You\'ve started — that\'s the hardest part. Every entry counts.'
+            : 'Your journey begins with a single entry. Start today!';
+
+      const entryGroupsHTML = sortedDates.length === 0
+        ? `<div class="empty-state"><div class="empty-state-icon">📝</div><div>No entries yet. Start journaling!</div></div>`
+        : sortedDates.map(dateStr => {
+            const entries = grouped[dateStr];
+            const allThreeDots = GOALS.map(g => {
+              const hasEntry = entries.some(e => e.goalId === g.id);
+              return `<div class="completion-dot ${hasEntry ? 'filled ' + g.color : 'empty'}"></div>`;
+            }).join('');
+
+            return `
+              <div class="entry-group" data-action="toggle-group">
+                <div class="entry-group-header">
+                  <span>${formatDisplayDate(dateStr)}</span>
+                  <div class="completion-dots">${allThreeDots}</div>
+                </div>
+                <div class="entry-group-body">
+                  ${entries.map(e => {
+                    const goal = GOALS.find(g => g.id === e.goalId);
+                    return `
+                      <div class="entry-item">
+                        <div class="entry-item-header">${goal.emoji} ${goal.name}</div>
+                        <div class="entry-item-text"><strong>Done:</strong> ${e.todaysTask || '—'}</div>
+                        <div class="entry-item-text"><strong>Tomorrow:</strong> ${e.tomorrowsTask || '—'}</div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('');
+
+      return `
+        <div class="page">
+          <div class="header">
+            <div class="header-left">
+              <div class="header-title">Monthly Review</div>
+              <div class="header-subtitle">August 2026</div>
+            </div>
+            <button class="theme-toggle" data-action="toggle-theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">${stats.totalDays}</div>
+              <div class="stat-label">Days Journaled</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.longestStreak}</div>
+              <div class="stat-label">Longest Streak</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.completionRate}%</div>
+              <div class="stat-label">Completion</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${bestStreak}</div>
+              <div class="stat-label">Active Streak</div>
+            </div>
+          </div>
+
+          <div class="entries-list">${entryGroupsHTML}</div>
+
+          <div class="insight-banner">${insightText}</div>
+        </div>
+      `;
+    }
+
+    // ─── Main Render ─────────────────────────────────────────────
+    function render() {
+      const app = document.getElementById('app');
+      let pageHTML = '';
+
+      switch (state.currentTab) {
+        case 'dashboard': pageHTML = renderDashboard(); break;
+        case 'journal': pageHTML = renderJournal(); break;
+        case 'history': pageHTML = renderHistory(); break;
+        case 'review': pageHTML = renderReview(); break;
+        default: pageHTML = renderDashboard();
+      }
+
+      app.innerHTML = pageHTML;
+      if (state.currentTab !== 'journal') {
+        app.insertAdjacentHTML('beforeend', renderTabBar());
+      }
+
+      // Focus textarea if editing journal
+      if (state.currentTab === 'journal') {
+        const ta = document.getElementById('todays-task');
+        if (ta) setTimeout(() => ta.focus(), 100);
+      }
+
+      // Attach form handler
+      const form = document.getElementById('journal-form');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          handleSaveEntry(form);
+        });
+      }
+    }
+
+    // ─── Event Delegation ────────────────────────────────────────
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+
+      const action = target.dataset.action;
+
+      if (action === 'none') return;
+
+      switch (action) {
+        case 'toggle-theme':
+          state.theme = state.theme === 'light' ? 'dark' : 'light';
+          applyTheme();
+          render();
+          break;
+
+        case 'open-journal':
+          state.currentTab = 'journal';
+          state.activeGoal = target.dataset.goal;
+          state.isEditing = false;
+          render();
+          window.scrollTo(0, 0);
+          break;
+
+        case 'go-back':
+          state.currentTab = 'dashboard';
+          state.isEditing = false;
+          render();
+          break;
+
+        case 'edit-entry':
+          state.isEditing = true;
+          render();
+          break;
+
+        case 'delete-entry':
+          if (confirm('Delete this entry?')) {
+            const today = getToday();
+            state.entries = state.entries.filter(
+              e => !(e.date === today && e.goalId === state.activeGoal)
+            );
+            saveEntries();
+            state.currentTab = 'dashboard';
+            render();
+          }
+          break;
+
+        case 'select-date':
+          state.selectedDate = target.dataset.date;
+          render();
+          break;
+
+        case 'close-modal':
+          state.selectedDate = null;
+          render();
+          break;
+
+        case 'no-close':
+          break;
+
+        case 'toggle-group':
+          target.closest('.entry-group').classList.toggle('open');
+          break;
+      }
+    });
+
+    // TabBar clicks (delegated since tabBar is re-rendered)
+    document.addEventListener('click', (e) => {
+      const tabBtn = e.target.closest('[data-tab]');
+      if (!tabBtn) return;
+
+      const tabId = tabBtn.dataset.tab;
+      if (tabId === 'journal') {
+        state.activeGoal = tabBtn.dataset.goal || getFirstIncompleteGoal();
+      }
+      state.currentTab = tabId;
+      state.selectedDate = null;
+      state.isEditing = false;
+      render();
+      window.scrollTo(0, 0);
+    });
+
+    // ─── Init ────────────────────────────────────────────────────
+    state.entries = loadEntries();
+    state.theme = loadTheme();
+    applyTheme();
+    render();
+  </script>
+</body>
+</html>
