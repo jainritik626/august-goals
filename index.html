@@ -703,14 +703,19 @@
     }
 
     auth.getRedirectResult().then(result => {
+      authPending = false;
       if (result.user && !currentUserId) {
         currentUserId = result.user.uid;
         listenToFirestore();
         state._initialLoadDone = true;
         showSyncBadge('Connected ✓', 'var(--color-success)');
         render();
+      } else if (!state._initialLoadDone) {
+        state._initialLoadDone = true;
+        render();
       }
     }).catch(err => {
+      authPending = false;
       if (err.code !== 'auth/redirect-cancelled-by-user') {
         console.warn('Redirect result error:', err.message);
       }
@@ -728,15 +733,20 @@
       render();
     }
 
+    let authPending = true;
+
     auth.onAuthStateChanged(user => {
       if (user) {
         currentUserId = user.uid;
+        authPending = false;
         listenToFirestore();
         signinSkipped = false;
         if (!state._initialLoadDone) state._initialLoadDone = true;
         render();
-      } else {
-        currentUserId = null;
+      } else if (authPending) {
+        // Only handle the initial null — don't re-render to null if user was
+        // already set by getRedirectResult
+        authPending = false;
         if (syncUnsubscribe) { syncUnsubscribe(); syncUnsubscribe = null; }
         state._initialLoadDone = true;
         state.entries = localFallback;
