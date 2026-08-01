@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#F5F5F7">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta name="apple-mobile-web-app-title" content="Aug Goals">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%233B82F6'/%3E%3Ctext x='90' y='120' font-size='90' text-anchor='middle' font-family='system-ui'%3E📋%3C/text%3E%3C/svg%3E">
   <title>August 2026 Goals</title>
@@ -694,8 +695,6 @@
     }
 
     // ─── Auth ────────────────────────────────────────────────────
-    let authResolved = false;
-
     async function signInWithGoogle() {
       try {
         showSyncBadge('Signing in...', '#4285F4');
@@ -706,63 +705,33 @@
       }
     }
 
-    function handleAuthSuccess(user) {
-      currentUserId = user.uid;
-      userName = user.displayName || localStorage.getItem('august-goals-name') || '';
-      signinSkipped = false;
-      state._initialLoadDone = true;
-      authResolved = true;
-      showSyncBadge('Connected ✓', 'var(--color-success)');
-      listenToFirestore();
+    function resolveAuth() {
+      const user = auth.currentUser;
+      if (user) {
+        currentUserId = user.uid;
+        userName = user.displayName || localStorage.getItem('august-goals-name') || '';
+        signinSkipped = false;
+        state._initialLoadDone = true;
+        showSyncBadge('Connected ✓', 'var(--color-success)');
+        listenToFirestore();
+      } else {
+        userName = localStorage.getItem('august-goals-name') || '';
+        currentUserId = null;
+        state._initialLoadDone = true;
+        state.entries = localFallback;
+      }
       render();
     }
 
-    function handleAuthFail() {
-      userName = localStorage.getItem('august-goals-name') || '';
-      currentUserId = null;
-      state._initialLoadDone = true;
-      authResolved = true;
-      state.entries = localFallback;
-      render();
-    }
-
-    // Primary: getRedirectResult handles the redirect return
+    // getRedirectResult must be called to complete the redirect sign-in
     auth.getRedirectResult()
       .then(result => {
         if (result && result.user) {
-          handleAuthSuccess(result.user);
-        } else if (!authResolved) {
-          const currentUser = auth.currentUser;
-          if (currentUser) {
-            handleAuthSuccess(currentUser);
-          } else {
-            handleAuthFail();
-          }
+          // Redirect just completed — auth.currentUser is now set
         }
+        resolveAuth();
       })
-      .catch(err => {
-        if (err.code !== 'auth/redirect-cancelled-by-user') {
-          console.warn('Redirect result error:', err.message);
-        }
-        if (!authResolved) handleAuthFail();
-      });
-
-    // Backup: onAuthStateChanged catches sign-out and subsequent changes
-    auth.onAuthStateChanged(user => {
-      if (!authResolved) {
-        if (user) {
-          handleAuthSuccess(user);
-        }
-        return;
-      }
-      // After initial resolution, only handle sign-out
-      if (!user) {
-        currentUserId = null;
-        if (syncUnsubscribe) { syncUnsubscribe(); syncUnsubscribe = null; }
-        state.entries = localFallback;
-        render();
-      }
-    });
+      .catch(() => resolveAuth());
 
     function signOut() {
       auth.signOut();
@@ -773,10 +742,10 @@
       render();
     }
 
-    // Fallback: if nothing resolved within 4s, show UI without auth
+    // Fallback: if getRedirectResult hangs, resolve after 3s
     setTimeout(() => {
-      if (!authResolved) handleAuthFail();
-    }, 4000);
+      if (!state._initialLoadDone) resolveAuth();
+    }, 3000);
 
     function listenToFirestore() {
       if (!currentUserId) return;
