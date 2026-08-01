@@ -694,20 +694,22 @@
     }
 
     // ─── Auth ────────────────────────────────────────────────────
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
     async function signInWithGoogle() {
       try {
         showSyncBadge('Signing in...', '#4285F4');
-        if (isMobile) {
-          sessionStorage.setItem('auth-redirect', '1');
-          await auth.signInWithRedirect(googleProvider);
-        } else {
-          await auth.signInWithPopup(googleProvider);
-        }
+        await auth.signInWithPopup(googleProvider);
       } catch (err) {
-        console.warn('Google sign-in failed:', err.message);
-        showSyncBadge('Sign-in skipped', '#FF9F0A');
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+          try {
+            await auth.signInWithRedirect(googleProvider);
+          } catch (err2) {
+            console.warn('Google sign-in failed:', err2.message);
+            showSyncBadge('Sign-in skipped', '#FF9F0A');
+          }
+        } else {
+          console.warn('Google sign-in failed:', err.message);
+          showSyncBadge('Sign-in skipped', '#FF9F0A');
+        }
       }
     }
 
@@ -719,6 +721,9 @@
       signinSkipped = false;
       render();
     }
+
+    // Process redirect result if coming back from one
+    auth.getRedirectResult().catch(() => {});
 
     auth.onAuthStateChanged(user => {
       if (user) {
@@ -737,12 +742,6 @@
         render();
       }
     });
-
-    // Handle mobile redirect return — process the credential
-    if (isMobile && sessionStorage.getItem('auth-redirect')) {
-      sessionStorage.removeItem('auth-redirect');
-      auth.getRedirectResult().catch(() => {});
-    }
 
     // Fallback: if onAuthStateChanged never fires, show UI after 3s
     setTimeout(() => {
